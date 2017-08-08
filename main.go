@@ -2,21 +2,57 @@ package main
 
 import (
 	"fmt"
+	tm "github.com/buger/goterm"
+	"time"
+	"math/rand"
 )
 
 func main() {
+	rand.Seed(time.Now().Unix())
 	game := CreateGame(20, 20)
-	//game.board.CreateBlinker(3, 4)
-	game.board.CreateBlock(3, 4)
+	//game.board.CreateBlinker(3, 3)
+	//game.board.CreateBlock(0, 0)
+	//game.board.CreateBlock(18, 0)
+	//game.board.CreateBlock(0, 18)
+	//game.board.CreateBlock(18, 18)
+	game.board.FillRandomly()
 	for !game.finished {
-		fmt.Println(game)
+		game.PrintToConsole()
 		game.MakeMove()
 	}
+	for {
+		var i = 1
+		i++
+	}
+	// temporarily unreachable
 	if (len(game.board.aliveCells) == 0) {
 		fmt.Printf("The game is over after %v generations because all cells died.", game.generation)
 	} else {
 		fmt.Printf("The game is over after %v generations because there will be no more changes.", game.generation)
 	}
+}
+
+func (g Game) PrintToConsole() {
+	tm.Clear()
+	tm.MoveCursor(1, 1)
+	tm.Print(g.String())
+
+	// Create Box with 30% width of current screen, and height of 20 lines
+	box := tm.NewBox(g.board.w + 2, g.board.h + 2, 0)
+	box.Border = "# # # # # #"
+
+	// Add some content to the box
+	// Note that you can add ANY content, even tables
+	fmt.Fprint(box)
+
+	// Move Box to approx center of the screen
+	tm.Print(tm.MoveTo(box.String(), 1, 3))
+	for c := range(g.board.aliveCells) {
+		tm.MoveCursor(c.y + 1 + 3, c.x + 1 + 1)
+		tm.Print(tm.Background(tm.Color("X", tm.GREEN), tm.WHITE))
+	}
+	tm.Flush()
+	time.Sleep(time.Millisecond * 50)
 }
 
 func (board *Board) CreateBlinker(x, y int) {
@@ -30,6 +66,16 @@ func (board *Board) CreateBlock(x, y int) {
 	board.aliveCells[Coordinate{x + 1, y}] = true
 	board.aliveCells[Coordinate{x, y + 1}] = true
 	board.aliveCells[Coordinate{x + 1, y + 1}] = true
+}
+
+func (board *Board) FillRandomly() {
+	for x := 0; x < board.w; x++ {
+		for y := 0; y < board.h; y++ {
+			if rand.Intn(2) == 0 {
+				board.aliveCells[Coordinate{x, y}] = true
+			}
+		}
+	}
 }
 
 func (g *Game) Revive(board *Board, c Coordinate) {
@@ -118,7 +164,7 @@ type Game struct {
 }
 
 func (g *Game) String() string {
-	return fmt.Sprintf("Generation: %v, Finished: %v, Alive Cells: %v", g.generation, g.finished, g.board.aliveCells)
+	return fmt.Sprintf("Generation: %v, Finished: %v", g.generation, g.finished)
 }
 
 func CreateGame(w, h int) *Game {
